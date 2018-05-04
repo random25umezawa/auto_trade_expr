@@ -1,4 +1,4 @@
-Promise = require("bluebird");
+//Promise = require("bluebird");
 const fs = require("fs");
 
 /*
@@ -12,7 +12,7 @@ const set_pairs = [
 ]
 */
 let set_pairs = [];
-for(let loop = 0; loop < 250; loop++) {
+for(let loop = 0; loop < 500; loop++) {
 	let count = 3+parseInt(Math.random()*3);
 	let indexes = [];
 	let power = [];
@@ -33,7 +33,8 @@ let power = [5,2,-2,-2,-2,-2];
 
 let btc = 0.0;
 let wallet = 0.0;
-let pairs = ["BCH","ETH","BTCD","XRP","EMC2","GAME","DOGE","DGB","LTC"];
+//let pairs = ["BCH","ETH","BTCD","XRP","EMC2","GAME","DOGE","DGB","LTC"];
+let pairs = ["BTCD"];
 //let pairs = ["BCH","ETH"];
 let results = {};
 for(let pair of pairs) {
@@ -78,10 +79,8 @@ let calcOneTime = (pair,index,alldata) => {
 	*/
 }
 
-let calcAllTime = (index,pair) => {
+let calcAllTime = (index,pair,start_index=-10000,end_index=-1) => {
 	//console.log("time,price,btc")
-	let start_index = -12500;
-	let end_index = -1;
 	let alldata = require(`./chart/${pair}`).sort((a,b)=>a[0]-b[0]).slice(start_index,end_index);
 	//let alldata = require(`./chart/${pair}`).sort((a,b)=>a[0]-b[0]);
 	alldata.reduce((current,next,index) => calcOneTime(pair,index,alldata), null);
@@ -92,22 +91,37 @@ let calcAllTime = (index,pair) => {
 	results[pair].push({index:index,pair,final_btc:final_btc});
 }
 
-pairs.map(pair => {
-	set_pairs.map((set_pair,index)=>{
-		indexes = set_pair[0];
-		power = set_pair[1];
-		btc = 50.0;
-		wallet = 0.0;
-		calcAllTime(index,pair)
+let calcAll = (start_index,end_index) => {
+	console.log("start "+start_index+" end "+end_index);
+	for(let pair of pairs) {
+		results[pair] = [];
+	}
+	new_pairs = [];
+	pairs.map(pair => {
+		set_pairs.map((set_pair,index)=>{
+			indexes = set_pair[0];
+			power = set_pair[1];
+			btc = 50.0;
+			wallet = 0.0;
+			calcAllTime(index,pair,start_index,end_index)
+		});
+		let result = results[pair];
+		result.sort((a,b)=>b.final_btc-a.final_btc);
+		for(let rank = 0; rank < 25; rank++) {
+			console.log(set_pairs[result[rank].index],result[rank]);
+			new_pairs.push(set_pairs[result[rank].index]);
+		}
+		console.log();
+		for(let rank = result.length-1; rank > result.length-26; rank--) {
+			//console.log(set_pairs[result[rank].index],result[rank]);
+			new_pairs.push(set_pairs[result[rank].index]);
+		}
+		console.log();
 	});
-	let result = results[pair];
-	result.sort((a,b)=>b.final_btc-a.final_btc);
-	for(let rank = 0; rank < 25; rank++) {
-		console.log(set_pairs[result[rank].index],result[rank]);
-	}
-	console.log();
-	for(let rank = result.length-1; rank > result.length-26; rank--) {
-		console.log(set_pairs[result[rank].index],result[rank]);
-	}
-	console.log();
-});
+	set_pairs = new_pairs;
+}
+
+calcAll(-25000,-12500);
+calcAll(-12500,-7500);
+calcAll(-7500,-2500);
+calcAll(-2500,-500);
